@@ -57,6 +57,4 @@ int main(int argc, char *argv[]) {
 
 	/* Pass execution to proper function */
 	(*action)();
-
-	printf("%s\n", name);
 }

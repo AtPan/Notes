@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = 
+CFLAGS = -Wall 
 SRC = ./src
 BIN = ./bin
 TARGET = note
