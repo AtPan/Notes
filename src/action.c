@@ -2,27 +2,30 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include "action.h"
 
 char *concat_int(char *, int);
-int parse_class_time(char *, int, int);
-char *parse_class_name(char *, int);
-int parse_class_dir(char *);
 
 /* Connect to the name, class, and edit flags setup in main.c */
-extern char *name, *class;
+extern char *name, *class, edit;
 
-/* Makes calls to both find_name and find_class functions */
+/*
+Finds the name and class subdir for the note file.
+For more detailed information, see:
+	* find_name
+	* find_class
+	* open_file
+*/
 void find_name_and_class() {
 	find_name();
 	find_class();
 	open_file();
 }
 
-/* Find name of the file using default dd-mm.txt format */
+/*
+Find name of the file using default dd-mm.txt format.
+Saves file name to the global variable name.
+*/
 void find_name() {
 	time_t td = time(NULL);
 	struct tm *local = localtime(&td);
@@ -56,20 +59,22 @@ void find_name() {
 		printf("ERROR: Cannot create name for file\n");
 	}
 
-	#ifdef SKIP
+#ifdef SKIP
 	open_file();
-	#endif
+#endif
 }
 
-// TODO: Make loop work without a million variables, try to reuse some, add comments explaining reuse of variables
-//		 Add better error-handling. Maybe make a default dir in case of class-finding errors?
+/*
+Attempts to find the valid subdir path for the current class.
+Saves path string to global variable class.
+*/
 void find_class() {
 	enum Day { SUN = 1, MON = 77, TUE = 84, WED = 87, THR = 82, FRI = 70, SAT = 2 };
 	const int EDAY[] = { SUN, MON, TUE, WED, THR, FRI, SAT };
 
 	/* Create our auto variables */
 	FILE *ctime;
-	char *linebuf, *c_buf;
+	char *linebuf;
 	time_t td = time(NULL);
 	struct tm *local = localtime(&td);
 	int hour = local->tm_hour, min = local->tm_min, day = local->tm_wday;
@@ -84,10 +89,6 @@ void find_class() {
 		fprintf(stderr, "Error allocating '%d' bytes for line buffer\n", MAX_LINE);
 		exit(1);
 	}
-
-	if((c_buf = (char *)malloc(4)) == NULL) { //All class times will be in xxxx (i.e. 0145) format so always 4 characters
-		fprintf(stderr, "Error allocating '4' bytes for time schedule buffer\n");
-	}
 	
 	/* Find out what times the classes are and figure out if we fall in any of said time intervals */
 	while((linebuf = fgets(linebuf, MAX_LINE - 1, ctime)) != 0 && linebuf != EOF) {
@@ -96,23 +97,29 @@ void find_class() {
 		int start_time = parse_class_time(linebuf, 0, 4), end_time = parse_class_time(linebuf, 5, 9);
 
 //		if(hour > (start_time / 100) && hour < (end_time / 100) && min > (start_time % 100) && min < (end_time % 100)) {
-		char c;
-		for(int i = 0; (c = *(linebuf + 10 + i)) != '_'; i++) {
-			if(EDAY[day] == c) {
-				for(; *(linebuf + 10 + i) != '_'; i++);
-				char *cname = parse_class_name(linebuf, 11 + i);
-				parse_class_dir(cname);
-				goto cfound;
-			}
-		}
-//	}
+			char c;
+			for(int i = 0; (c = *(linebuf + 10 + i)) != '_'; i++) {
+//				if(EDAY[day] == c) {
+					for(; *(linebuf + 10 + i) != '_'; i++);
+					char *cname = parse_class_name(linebuf, 11 + i);
+					
+					if(parse_class_dir(cname) != EOF) {
+						class = cname;
+					}
+
+					goto cfound;
+				}
+//			}
+//		}
+
+	}
 
 cfound:
-;
-	#ifdef SKIP
+	fclose(ctime);
+
+#ifdef SKIP
 	open_file();
-	#endif
-}
+#endif
 }
 
 void open_file() {
@@ -132,77 +139,4 @@ char *concat_int(char *s, int n) {
 	}
 
 	return s + len;
-}
-
-/* 
-Parses a line from our class schedule document and returns the time caught between n and m.
-
-Example: parse_class_time("1100_1245_MW_CLASS", 0, 4) -> 1100
-
-Arguments:
-	char *linebuf = String of line from document
-	int n = Starting offset to begin from
-	int m = Ending offset to end
-
-Returns:
-	Int of time of class between buffers or EOF on error
-
-Assumptions:
-	Ints n and m are nonnegative, within range of linebuf, and m is greater than n
-*/
-int parse_class_time(char *linebuf, int n, int m) {
-	if(linebuf == EOF || linebuf == 0 || n < 0 || m < n) return EOF;
-
-	char *buf = (char *)malloc(m - n);
-	if(buf == NULL) return EOF;
-
-	buf = strncpy(buf, linebuf + n, m);
-	int ret = atoi(buf);
-	free(buf);
-	return ret;
-}
-
-char *parse_class_name(char *linebuf, int n) {
-	int j;
-	for(j = 0; *(linebuf + n + j) != '\0'; j++);
-	char *cname = (char *)malloc(j + 7);
-
-	cname = strcpy(cname, "class/");
-	cname = strncpy(cname + 6, linebuf + n, j - 1) - 6;
-	cname = strcat(cname, "/\0");
-
-	return cname;	
-}
-
-int parse_class_dir(char *cdir) {
-	int ret = 0;
-
-	struct stat *sp = (struct stat *)malloc(sizeof(struct stat));
-	if(sp == NULL) {
-		fprintf(stderr, "Error in attempting to secure class directory");
-		exit(1);
-	}
-			
-	if(stat(cdir, sp) < 0) {
-		if(!(ret = mkdir(cdir, S_IRWXU))) {
-			class = cdir;
-		}
-		else {
-			fprintf(stderr, "Error creating directory '%s'\n", cdir);
-			exit(1);
-		}
-	}
-	else if(S_ISDIR(sp->st_mode)) {
-		class = cdir;
-	}
-	else if(stat("class/etc/", sp) < 0) {
-		mkdir("class/etc/", S_IRWXU);
-		class = "class/etc/";
-	}
-	else {
-		class = "class/etc/";
-	}
-
-	free(sp);
-	return ret;
 }
