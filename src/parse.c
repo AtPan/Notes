@@ -34,33 +34,6 @@ int parse_class_time(char *linebuf, int n, int m) {
 }
 
 /*
-Parses the name of a class from the class data line (at a given offset n).
-
-Example:
-	parse_class_name("1100_1245_MW_CLASS", 13) -> "class/CLASS\0"
-
-Arguments:
-	char *linebuf = String of line from time document
-	int n = Offset to start from
-
-Returns:
-	String of location to the given class's subdirectory or EOF on error
-
-Assumptions:
-	n is a nonnegative integer and within range of array linebuf
-*/
-char *parse_class_name(char *linebuf, int n) {
-	int nl = (strchr(linebuf, '\n') == NULL) ? 1 : 0, clen = strchr(linebuf + n, '\0') - (linebuf + n);
-	char *cname = (char *)malloc(clen + 7);
-
-	cname = strcpy(cname, "class/");
-	cname = strncpy(cname + 6, linebuf + n, clen - (nl ? 2 : 1)) - 6;
-	cname = strcat(cname, "/\0");
-
-	return cname;	
-}
-
-/*
 Parses existence of a given subdirectory.
 
 Example:

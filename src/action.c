@@ -101,8 +101,14 @@ void find_class() {
 			for(int i = 0; (c = *(linebuf + 10 + i)) != '_'; i++) {
 //				if(EDAY[day] == c) {
 					for(; *(linebuf + 10 + i) != '_'; i++);
-					char *cname = parse_class_name(linebuf, 11 + i);
-					
+					char *cname = (char *)malloc(11);
+					int n = 11 + i;
+					int nl = (strchr(linebuf, '\n') == NULL) ? 1 : 0, clen = strchr(linebuf + n, '\0') - (linebuf + n);
+
+					cname = strcpy(cname, "class/");
+					cname = strncpy(cname + 6, linebuf + n, clen - (nl ? 2 : 1)) - 6;
+					cname = strcat(cname, "/\0");
+
 					if(parse_class_dir(cname) != EOF) {
 						class = cname;
 					}
@@ -123,7 +129,19 @@ cfound:
 }
 
 void open_file() {
+	char *cmd = (char *)malloc(strlen(class) + strlen(name) + 3);
+	if(cmd == NULL) {
+		fprintf(stderr, "Error allocating memory for full file path '%s%s'\n", class, name);
+		exit(1);
+	}
 
+	if(edit) {
+		int pid = fork();
+		if(pid == 0) {
+			sprintf(cmd, "vim %s%s", class, name);
+			system(cmd);
+		}
+	}
 }
 
 /* Concats a given string s with ASCII characters of int n
