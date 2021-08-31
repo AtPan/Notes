@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "action.h"
 
 char *concat_int(char *, int);
@@ -33,6 +34,7 @@ void find_name() {
 	int month = local->tm_mon + 1; /* Month of the year */
 
 	char *filename = (char *)malloc(10); /* dd-mm.txt = 9 chars + ending 0 */
+	filename = init_str(filename);
 	
 	if(filename >= 0) { /* If pointer exists, fill it with the naming convention */
 		char *fn = filename;
@@ -48,10 +50,16 @@ void find_name() {
 			*fn++ = '0';
 		}
 		fn = concat_int(fn, month);
-		
-		strcat(fn, ".txt");
-		
-		*(fn + 9) = '\0';
+
+		fn = strcat(fn, ".txt\0");
+
+		/*
+		*fn++ = '.';
+		*fn++ = 't';
+		*fn++ = 'x';
+		*fn++ = 't';
+		*fn++ = '\0';
+		*/
 
 		name = filename; /* Save the file name */
 	}
@@ -129,18 +137,17 @@ cfound:
 }
 
 void open_file() {
-	char *cmd = (char *)malloc(strlen(class) + strlen(name) + 3);
+	char *cmd = (char *)malloc(strlen(CLASS_PATH) + strlen(class) + strlen(name) + 1);
+	sprintf(cmd, "%s%s%s\0", CLASS_PATH, class, name);
+
 	if(cmd == NULL) {
-		fprintf(stderr, "Error allocating memory for full file path '%s%s'\n", class, name);
+		fprintf(stderr, "Error allocating memory for full file path '%s%s%s'\n", CLASS_PATH, class, name);
 		exit(1);
 	}
 
-	if(edit) {
-		int pid = fork();
-		if(pid == 0) {
-			sprintf(cmd, "vim %s%s", class, name);
-			system(cmd);
-		}
+	if(edit == 1) {
+		char *args[] = {VIM_PATH, cmd, NULL};
+		execvp("vim", args);
 	}
 }
 
@@ -157,4 +164,9 @@ char *concat_int(char *s, int n) {
 	}
 
 	return s + len;
+}
+
+char *init_str(char *s, int n) {
+	for(int i = 0; i < n; i++) *(s + i) = 0;
+	return s;
 }
