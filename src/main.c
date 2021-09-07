@@ -5,6 +5,7 @@ int main(int, char*[]);
 
 /* Set up buffers and flags for file names, editing, and class name */
 char *name, *class, edit = 1;
+int vbose = 0;
 
 int main(int argc, char *argv[]) {
 	void (*action)() = &find_name_and_class;
@@ -23,6 +24,7 @@ int main(int argc, char *argv[]) {
 				printf("\t-c class:  Override automatic class schedule with a given class\n");
 				printf("\t-n name: 	 Override automatice naming scheme with a custom file name\n");
 				printf("\t-e:		 Only create the note file, do not open to edit\n");
+				printf("\t-v[v]:	 Have the program send more and more updates to stdout\n");
 				return 0;
 			case 'c':
 				/* Skips class name to the next potential arg */
@@ -31,7 +33,7 @@ int main(int argc, char *argv[]) {
 				/* Save given class name */
 				class = argv[i];
 				
-				/* Correctly sets the action fp */
+				/* Correctly sets the action function pointer */
 				action = (action == &find_name_and_class ? &find_name : &open_file);
 				
 				#ifndef SKIP
@@ -51,6 +53,10 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'e': /* Turns off editing flag */
 				edit = 0;
+				break;
+			case 'v': /* Sets verbose flag */
+				for(; *(argv[i] + vbose + 1) == 'v'; vbose++);
+
 				break;
 		}
 	}

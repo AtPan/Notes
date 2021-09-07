@@ -8,9 +8,21 @@ void find_class();
 char *init_str(char *s, int n);
 
 #define TIME_LOC "data/time.txt"
-#define CLASS_LOC "class.txt"
+#define CLASS_LOC "data/class.txt"
 #define MAX_LINE 50
 #define VIM_PATH "/usr/bin/vim"
+#define TOUCH_PATH "/usr/bin/touch"
 #define CLASS_PATH "/home/floofykn/Programming/Projects/Notes/"
+#define CLASS_SUBDIR "class/"
+#define CLASS_SUBDIR_LEN strlen(CLASS_SUBDIR)
+#define MAX_NAME_SIZE 4
+
+#ifdef DEBUG
+#define DEBUG_SKIP 1
+#define debug_print(fmt, ...) \
+	do { fprintf(stderr, "%s:%d:%s\n", fmt, __FILE__, __LINE__, __func__, VA_ARGS);  } while(0)
+#else
+#define DEBUG_SKIP 0
+#endif
 
 #endif

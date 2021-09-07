@@ -4,6 +4,8 @@
 #include <sys/stat.h>
 #include "parse.h"
 
+extern int vbose;
+
 /* 
 Parses a line from our class schedule document and returns the time caught between n and m.
 
@@ -24,13 +26,18 @@ Assumptions:
 int parse_class_time(char *linebuf, int n, int m) {
 	if(linebuf == EOF || linebuf == 0 || n < 0 || m < n) return EOF;
 
+	if(vbose > 1) { fprintf(stdout, "Parsing line '%s' for time between indices '%d' and '%d'\n", linebuf, n, m); }
+
 	char *buf = (char *)malloc(m - n);
 	if(buf == NULL) return EOF;
 
 	buf = strncpy(buf, linebuf + n, m);
-	int ret = atoi(buf);
+	int value = atoi(buf);
+	
+	if(vbose > 1) { fprintf(stdout, "Class time '%d' found\n", value); }
+	
 	free(buf);
-	return ret;
+	return value;
 }
 
 /*
@@ -57,9 +64,13 @@ int parse_class_dir(char *cdir) {
 		fprintf(stderr, "Error in attempt to allocate memory for subdir data\n");
 		exit(1);
 	}
-			
-	if(stat(cdir, sp) < 0) {
-		if(!mkdir(cdir, S_IRWXU)) {
+
+	if(vbose > 1) { fprintf(stdout, "Parsing subdir '%s' for class name\n", cdir); }
+	
+	if(stat(cdir, sp) < 0) { /* If subdir does not exist */
+		if(!mkdir(cdir, S_IRWXU)) { /* If subdir has been created */
+			if(vbose > 1) { fprintf(stdout, "Subdir '%s' has been created\n", cdir); }
+
 			status = 1;
 		}
 		else {
@@ -67,7 +78,9 @@ int parse_class_dir(char *cdir) {
 			status = EOF;
 		}
 	}
-	else if(S_ISDIR(sp->st_mode)) {
+	else if(S_ISDIR(sp->st_mode)) { /* If subdir exists as a dir */
+		if(vbose > 1) { fprintf(stdout, "Subdir '%s' has been found\n", cdir); }
+
 		status = 0;
 	}
 

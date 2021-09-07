@@ -4,11 +4,13 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "action.h"
+#include "parse.h"
 
 char *concat_int(char *, int);
 
 /* Connect to the name, class, and edit flags setup in main.c */
 extern char *name, *class, edit;
+extern int vbose;
 
 /*
 Finds the name and class subdir for the note file.
@@ -28,13 +30,15 @@ Find name of the file using default dd-mm.txt format.
 Saves file name to the global variable name.
 */
 void find_name() {
+	if(vbose) { fprintf(stdout, "Finding name for file...\n"); }
+
 	time_t td = time(NULL);
 	struct tm *local = localtime(&td);
 	int date = local->tm_mday; /* Date of the month */
 	int month = local->tm_mon + 1; /* Month of the year */
 
 	char *filename = (char *)malloc(10); /* dd-mm.txt = 9 chars + ending 0 */
-	filename = init_str(filename);
+	filename = init_str(filename, 10);
 	
 	if(filename >= 0) { /* If pointer exists, fill it with the naming convention */
 		char *fn = filename;
@@ -53,18 +57,13 @@ void find_name() {
 
 		fn = strcat(fn, ".txt\0");
 
-		/*
-		*fn++ = '.';
-		*fn++ = 't';
-		*fn++ = 'x';
-		*fn++ = 't';
-		*fn++ = '\0';
-		*/
-
 		name = filename; /* Save the file name */
+
+		if(vbose) { fprintf(stdout, "Filename '%s'\n", filename); }
 	}
 	else {
-		printf("ERROR: Cannot create name for file\n");
+		fprintf(stderr, "ERROR: Cannot create name for file\n");
+		name = NULL;
 	}
 
 #ifdef SKIP
@@ -77,6 +76,8 @@ Attempts to find the valid subdir path for the current class.
 Saves path string to global variable class.
 */
 void find_class() {
+	if(vbose) { fprintf(stdout, "Searching for class name...\n"); }
+
 	enum Day { SUN = 1, MON = 77, TUE = 84, WED = 87, THR = 82, FRI = 70, SAT = 2 };
 	const int EDAY[] = { SUN, MON, TUE, WED, THR, FRI, SAT };
 
@@ -101,20 +102,45 @@ void find_class() {
 	/* Find out what times the classes are and figure out if we fall in any of said time intervals */
 	while((linebuf = fgets(linebuf, MAX_LINE - 1, ctime)) != 0 && linebuf != EOF) {
 		if(*linebuf == '#') continue; //Allow for in-line comments
-
+		
 		int start_time = parse_class_time(linebuf, 0, 4), end_time = parse_class_time(linebuf, 5, 9);
 
-//		if(hour > (start_time / 100) && hour < (end_time / 100) && min > (start_time % 100) && min < (end_time % 100)) {
-			char c;
-			for(int i = 0; (c = *(linebuf + 10 + i)) != '_'; i++) {
-//				if(EDAY[day] == c) {
-					for(; *(linebuf + 10 + i) != '_'; i++);
-					char *cname = (char *)malloc(11);
-					int n = 11 + i;
-					int nl = (strchr(linebuf, '\n') == NULL) ? 1 : 0, clen = strchr(linebuf + n, '\0') - (linebuf + n);
+		if(strchr(linebuf, '\n') != NULL) {
+			int newline_offset = strchr(linebuf, '\n') - linebuf;
+			*(linebuf + newline_offset) = '\0';
+		}
 
-					cname = strcpy(cname, "class/");
-					cname = strncpy(cname + 6, linebuf + n, clen - (nl ? 2 : 1)) - 6;
+		if(vbose) { fprintf(stdout, "\nClass Line:'%s'Time: '%d-%d'\n\n", linebuf, start_time, end_time); }
+
+		/* Check current time against time of class */
+		if(DEBUG_SKIP || (hour >= (start_time / 100) && hour <= (end_time / 100) && min >= (start_time % 100) && min <= (end_time % 100))) {
+			char c;
+			for(int i = 10; (c = *(linebuf + i)) != '_'; i++) {
+				if(DEBUG_SKIP || EDAY[day] == c) { /* If today is one of the class days */
+					for(; *(linebuf+ i) != '_'; i++);
+					
+					/* Grab the name of the class */
+					int cname_size = strlen(CLASS_SUBDIR) + MAX_NAME_SIZE;
+					char *cname = (char *)malloc(cname_size); /* Init string */
+
+					if(cname == NULL) {
+						fprintf(stderr, "Could not allocate enough memory for class name string\n");
+						exit(1);
+					}
+
+					/* linebuf + i = "_CLASS" */
+
+					i++; //Increment past the leftover _
+					//int nl = (strchr(linebuf, '\n') == NULL) ? 0 : 1;
+					int clen = strchr(linebuf + i, '\0') - (linebuf + i);
+
+					/* 
+						Note:
+						The nl is needed incase there is a \n before the \0. If there is, it will mess up the directory
+					*/
+
+					cname = strcpy(cname, CLASS_SUBDIR);
+					cname = strncpy(cname + CLASS_SUBDIR_LEN, linebuf + i, clen) - CLASS_SUBDIR_LEN;
 					cname = strcat(cname, "/\0");
 
 					if(parse_class_dir(cname) != EOF) {
@@ -123,13 +149,17 @@ void find_class() {
 
 					goto cfound;
 				}
-//			}
-//		}
-
+			}
+		}
 	}
+
+	class = NULL;
+	return;
 
 cfound:
 	fclose(ctime);
+
+	if(vbose) { fprintf(stdout, "Class name found: '%s'\n", class); }
 
 #ifdef SKIP
 	open_file();
@@ -137,22 +167,42 @@ cfound:
 }
 
 void open_file() {
-	char *cmd = (char *)malloc(strlen(CLASS_PATH) + strlen(class) + strlen(name) + 1);
-	sprintf(cmd, "%s%s%s\0", CLASS_PATH, class, name);
+	if(class != NULL && name != NULL) {
+		char *cmd = (char *)malloc(strlen(CLASS_PATH) + strlen(class) + strlen(name) + 1);
+		sprintf(cmd, "%s%s%s", CLASS_PATH, class, name);
 
-	if(cmd == NULL) {
-		fprintf(stderr, "Error allocating memory for full file path '%s%s%s'\n", CLASS_PATH, class, name);
-		exit(1);
-	}
+		if(cmd == NULL) {
+			fprintf(stderr, "Error allocating memory for full file path '%s%s%s'\n", CLASS_PATH, class, name);
+			exit(1);
+		}
 
-	if(edit == 1) {
-		char *args[] = {VIM_PATH, cmd, NULL};
-		execvp("vim", args);
+		if(edit == 1) {
+			char *args[] = {VIM_PATH, cmd, NULL};
+			execvp("vim", args);
+		}
+		else {
+			char *args[] = {TOUCH_PATH, cmd, NULL};
+			execvp("touch", args);
+		}
 	}
 }
 
-/* Concats a given string s with ASCII characters of int n
-   Example: concat_int("Hello", 15) -> "Hello15" */
+/*
+Concats the printable characters of n onto string s
+
+Example:
+	concat_int("Hello", 20) -> "Hello20"
+
+Arguments:
+	char *s = String to concat to
+	int n = Printable digits to concat onto s
+
+Returns:
+	A string concatenated with the digits from n
+
+Assumptions:
+	String s is a valid pointer and is large enough to hold the digits of n
+*/
 char *concat_int(char *s, int n) {
 	char *str = s;
 	int len = 0;
@@ -166,7 +216,25 @@ char *concat_int(char *s, int n) {
 	return s + len;
 }
 
+/*
+A function that initiates a string to all 0's to avoid potential errors.
+
+Example:
+	init_str(&str, 10) -> First 10 chars of str initialized to 0
+
+Arguments:
+	char *s = String pointer
+	int n = Length of char *s
+
+Returns:
+	String s or NULL on error
+
+Assumptions:
+	char *s is a valid pointer and n is a correct length of s
+*/
 char *init_str(char *s, int n) {
+	if(s == NULL || n <= 0) return NULL;
+	
 	for(int i = 0; i < n; i++) *(s + i) = 0;
 	return s;
 }

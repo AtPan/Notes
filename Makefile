@@ -14,11 +14,11 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^
 
-%.o: %.c $(HSRC)
+%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 clean:
 	rm $(BIN)/*
 
-debug: CFLAGS = -g3
+debug: CFLAGS = -g3 -DDEBUG
 debug: all
