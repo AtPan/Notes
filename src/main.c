@@ -5,10 +5,13 @@ int main(int, char*[]);
 
 /* Set up buffers and flags for file names, editing, and class name */
 char *name, *class, edit = 1;
-int vbose = 0;
+int vbose = 0, skip = 0;
 
 int main(int argc, char *argv[]) {
 	void (*action)() = &find_name_and_class;
+	char *DAT_PATH = "data/data.dat";
+
+
 
 	/* Loop through all arguments  */
 	for(int i = 1; i < argc; i++) {
@@ -36,19 +39,15 @@ int main(int argc, char *argv[]) {
 				/* Correctly sets the action function pointer */
 				action = (action == &find_name_and_class ? &find_name : &open_file);
 				
-				#ifndef SKIP
-				#define SKIP
-				#endif
-				
+				skip = 1;
+
 				break;
 			case 'n': /* Same deal as with c arg but with name */
 				i++;
 				name = argv[i];
 				action = (action == &find_name_and_class ? &find_class : &open_file);
 				
-				#ifndef SKIP
-				#define SKIP
-				#endif
+				skip = 1;
 
 				break;
 			case 'e': /* Turns off editing flag */

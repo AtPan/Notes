@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall 
+CFLAGS = -Wall -g3 
 SRC = ./src
 BIN = ./bin
 TARGET = note
@@ -20,5 +20,5 @@ $(TARGET): $(OBJS)
 clean:
 	rm $(BIN)/*
 
-debug: CFLAGS = -g3 -DDEBUG
+debug: CFLAGS += -DDEBUG
 debug: all

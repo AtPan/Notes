@@ -10,7 +10,7 @@ char *concat_int(char *, int);
 
 /* Connect to the name, class, and edit flags setup in main.c */
 extern char *name, *class, edit;
-extern int vbose;
+extern int vbose, skip;
 
 /*
 Finds the name and class subdir for the note file.
@@ -66,9 +66,7 @@ void find_name() {
 		name = NULL;
 	}
 
-#ifdef SKIP
-	open_file();
-#endif
+	if(skip) { open_file(); }
 }
 
 /*
@@ -83,7 +81,7 @@ void find_class() {
 
 	/* Create our auto variables */
 	FILE *ctime;
-	char *linebuf;
+	char *linebuf, *cname;
 	time_t td = time(NULL);
 	struct tm *local = localtime(&td);
 	int hour = local->tm_hour, min = local->tm_min, day = local->tm_wday;
@@ -98,9 +96,15 @@ void find_class() {
 		fprintf(stderr, "Error allocating '%d' bytes for line buffer\n", MAX_LINE);
 		exit(1);
 	}
+
+	int cname_len = CLASS_DIR_LEN + MAX_NAME_SIZE;
+	if((cname = (char *)malloc(cname_len)) == NULL) {
+		fprintf(stderr, "Error allocating '%d' bytes for class name buffer\n", cname_len);
+		exit(1);
+	}
 	
 	/* Find out what times the classes are and figure out if we fall in any of said time intervals */
-	while((linebuf = fgets(linebuf, MAX_LINE - 1, ctime)) != 0 && linebuf != EOF) {
+	while((linebuf = fgets(linebuf, MAX_LINE - 1, ctime)) != 0 && (long)linebuf != EOF) {
 		if(*linebuf == '#') continue; //Allow for in-line comments
 		
 		int start_time = parse_class_time(linebuf, 0, 4), end_time = parse_class_time(linebuf, 5, 9);
@@ -116,63 +120,47 @@ void find_class() {
 		if(DEBUG_SKIP || (hour >= (start_time / 100) && hour <= (end_time / 100) && min >= (start_time % 100) && min <= (end_time % 100))) {
 			char c;
 			for(int i = 10; (c = *(linebuf + i)) != '_'; i++) {
-				if(DEBUG_SKIP || EDAY[day] == c) { /* If today is one of the class days */
+				if(DEBUG_SKIP || (EDAY[day] == c)) { /* If today is one of the class days */
 					for(; *(linebuf+ i) != '_'; i++);
 					
-					/* Grab the name of the class */
-					int cname_size = strlen(CLASS_SUBDIR) + MAX_NAME_SIZE;
-					char *cname = (char *)malloc(cname_size); /* Init string */
-
-					if(cname == NULL) {
-						fprintf(stderr, "Could not allocate enough memory for class name string\n");
-						exit(1);
-					}
-
 					/* linebuf + i = "_CLASS" */
-
 					i++; //Increment past the leftover _
-					//int nl = (strchr(linebuf, '\n') == NULL) ? 0 : 1;
 					int clen = strchr(linebuf + i, '\0') - (linebuf + i);
 
-					/* 
-						Note:
-						The nl is needed incase there is a \n before the \0. If there is, it will mess up the directory
-					*/
-
-					cname = strcpy(cname, CLASS_SUBDIR);
-					cname = strncpy(cname + CLASS_SUBDIR_LEN, linebuf + i, clen) - CLASS_SUBDIR_LEN;
+					cname = strcpy(cname, CLASS_DIR);
+					cname = strncpy(cname + CLASS_DIR_LEN, linebuf + i, clen) - CLASS_DIR_LEN;
 					cname = strcat(cname, "/\0");
 
 					if(parse_class_dir(cname) != EOF) {
 						class = cname;
 					}
-
+					
 					goto cfound;
 				}
 			}
 		}
 	}
 
+	fclose(ctime);
+	free(linebuf);
+	free(cname);
+
 	class = NULL;
 	return;
 
 cfound:
-	fclose(ctime);
-
 	if(vbose) { fprintf(stdout, "Class name found: '%s'\n", class); }
 
-#ifdef SKIP
-	open_file();
-#endif
+	if(skip) { open_file(); }
 }
 
 void open_file() {
 	if(class != NULL && name != NULL) {
-		char *cmd = (char *)malloc(strlen(CLASS_PATH) + strlen(class) + strlen(name) + 1);
-		sprintf(cmd, "%s%s%s", CLASS_PATH, class, name);
+		char *cmd = (char *)malloc(strlen(PROGRAM_PATH) + strlen(class) + strlen(name) + 1);
+		sprintf(cmd, "%s%s%s", PROGRAM_PATH, class, name);
 
 		if(cmd == NULL) {
-			fprintf(stderr, "Error allocating memory for full file path '%s%s%s'\n", CLASS_PATH, class, name);
+			fprintf(stderr, "Error allocating memory for full file path '%s%s%s'\n", PROGRAM_PATH, class, name);
 			exit(1);
 		}
 

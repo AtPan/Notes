@@ -24,7 +24,7 @@ Assumptions:
 	Ints n and m are nonnegative, within range of linebuf, and m is greater than n
 */
 int parse_class_time(char *linebuf, int n, int m) {
-	if(linebuf == EOF || linebuf == 0 || n < 0 || m < n) return EOF;
+	if((long)linebuf == EOF || (long)linebuf == 0 || n < 0 || m < n) return EOF;
 
 	if(vbose > 1) { fprintf(stdout, "Parsing line '%s' for time between indices '%d' and '%d'\n", linebuf, n, m); }
 
