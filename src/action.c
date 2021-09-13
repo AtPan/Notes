@@ -84,7 +84,8 @@ void find_class() {
 	char *linebuf, *cname;
 	time_t td = time(NULL);
 	struct tm *local = localtime(&td);
-	int hour = local->tm_hour, min = local->tm_min, day = local->tm_wday;
+	int time = (local->tm_hour * 100) + local->tm_min;
+	int day = local->tm_wday;
 
 	/* Error handle for our buffers */
 	if((ctime = fopen(TIME_LOC, "r")) == NULL) {
@@ -102,6 +103,9 @@ void find_class() {
 		fprintf(stderr, "Error allocating '%d' bytes for class name buffer\n", cname_len);
 		exit(1);
 	}
+	else {
+		cname = init_str(cname, cname_len);
+	}
 	
 	/* Find out what times the classes are and figure out if we fall in any of said time intervals */
 	while((linebuf = fgets(linebuf, MAX_LINE - 1, ctime)) != 0 && (long)linebuf != EOF) {
@@ -117,7 +121,7 @@ void find_class() {
 		if(vbose) { fprintf(stdout, "\nClass Line:'%s'Time: '%d-%d'\n\n", linebuf, start_time, end_time); }
 
 		/* Check current time against time of class */
-		if(DEBUG_SKIP || (hour >= (start_time / 100) && hour <= (end_time / 100) && min >= (start_time % 100) && min <= (end_time % 100))) {
+		if(DEBUG_SKIP || (time >= start_time && time <= end_time)) {
 			char c;
 			for(int i = 10; (c = *(linebuf + i)) != '_'; i++) {
 				if(DEBUG_SKIP || (EDAY[day] == c)) { /* If today is one of the class days */
