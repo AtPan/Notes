@@ -19,15 +19,16 @@ int main(int argc, char *argv[]) {
 		char *linebuf = (char *)malloc(MAX_LINE);
 		if(linebuf != NULL) {
 			FILE *fp = fopen(DAT_PATH, "r");
-			while((long)(linebuf = fgets(linebuf, MAX_LINE, fp)) != EOF) {
+			while((linebuf = fgets(linebuf, MAX_LINE, fp)) != NULL) {
 				int len = strchr(linebuf, ':') - linebuf;
-				if(len < 0) continue;
+				if(len < 0 || *linebuf == '#') continue;
 
 				if(!strncmp(linebuf, "time", len) && timedat == NULL) {
 					timedat = (char *)malloc(strlen(linebuf + len));
 
 					if(timedat != NULL) {
-						timedat = strcpy(timedat, linebuf + len);
+						timedat = strcpy(timedat, linebuf + len + 1);
+						*(timedat + strlen(linebuf + len) - 2) = '\0';
 					}
 				}
 				else if(!strncmp(linebuf, "class", len) && classdat == NULL) {
@@ -49,6 +50,12 @@ int main(int argc, char *argv[]) {
 			
 			fclose(fp);
 			free(linebuf);
+		}
+	}
+	else {
+		FILE *fp = fopen(DAT_PATH, "w");
+		if(fp != NULL) {
+			
 		}
 	}
 
