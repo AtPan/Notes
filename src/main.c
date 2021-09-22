@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 #include "action.h"
 
 int main(int, char*[]);
@@ -6,12 +9,50 @@ int main(int, char*[]);
 /* Set up buffers and flags for file names, editing, and class name */
 char *name, *class, edit = 1;
 int vbose = 0, skip = 0;
+char *timedat, *classdat, *editorpath;
 
 int main(int argc, char *argv[]) {
+	timedat = classdat = editorpath = NULL;
+	const char *DAT_PATH = "data/data.dat";
+
+	if(access(DAT_PATH, R_OK) == 0) {
+		char *linebuf = (char *)malloc(MAX_LINE);
+		if(linebuf != NULL) {
+			FILE *fp = fopen(DAT_PATH, "r");
+			while((long)(linebuf = fgets(linebuf, MAX_LINE, fp)) != EOF) {
+				int len = strchr(linebuf, ':') - linebuf;
+				if(len < 0) continue;
+
+				if(!strncmp(linebuf, "time", len) && timedat == NULL) {
+					timedat = (char *)malloc(strlen(linebuf + len));
+
+					if(timedat != NULL) {
+						timedat = strcpy(timedat, linebuf + len);
+					}
+				}
+				else if(!strncmp(linebuf, "class", len) && classdat == NULL) {
+					classdat = (char *)malloc(strlen(linebuf + len));
+
+					if(classdat != NULL) {
+						classdat = strcpy(classdat, linebuf + len);
+					}
+				}
+				else if(!strncmp(linebuf, "editor", len) && editorpath == NULL) {
+					editorpath = (char *)malloc(strlen(linebuf + len));
+
+					if(editorpath != NULL) {
+						editorpath = strcpy(editorpath, linebuf + len);
+					}
+				}
+				continue;
+			}
+			
+			fclose(fp);
+			free(linebuf);
+		}
+	}
+
 	void (*action)() = &find_name_and_class;
-	char *DAT_PATH = "data/data.dat";
-
-
 
 	/* Loop through all arguments  */
 	for(int i = 1; i < argc; i++) {

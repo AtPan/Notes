@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include "main.h"
 #include "action.h"
 #include "parse.h"
 
@@ -38,6 +39,13 @@ void find_name() {
 	int month = local->tm_mon + 1; /* Month of the year */
 
 	char *filename = (char *)malloc(10); /* dd-mm.txt = 9 chars + ending 0 */
+
+	if(filename == NULL) {
+		fprintf(stderr, MEM_ERR);
+		fprintf(stderr, "ERROR: 0%o\n", (MEM_ERR_CDE + 1));
+		exit(1);
+	}	
+
 	filename = init_str(filename, 10);
 	
 	if(filename >= 0) { /* If pointer exists, fill it with the naming convention */
@@ -90,17 +98,20 @@ void find_class() {
 	/* Error handle for our buffers */
 	if((ctime = fopen(TIME_LOC, "r")) == NULL) {
 		fprintf(stderr, "Error opening time-schedule file '%s'\n", TIME_LOC);
+		fprintf(stderr, "ERROR: 0%o\n", 0301);
 		exit(1);
 	}
 
 	if((linebuf = (char *)malloc(MAX_LINE)) == NULL) {
-		fprintf(stderr, "Error allocating '%d' bytes for line buffer\n", MAX_LINE);
+		fprintf(stderr, MEM_ERR);
+		fprintf(stderr, "ERROR: 0%o\n", (MEM_ERR_CDE + 2));
 		exit(1);
 	}
 
 	int cname_len = CLASS_DIR_LEN + MAX_NAME_SIZE;
 	if((cname = (char *)malloc(cname_len)) == NULL) {
-		fprintf(stderr, "Error allocating '%d' bytes for class name buffer\n", cname_len);
+		fprintf(stderr, MEM_ERR);
+		fprintf(stderr, "ERROR: 0%o\n", (MEM_ERR_CDE + 3));
 		exit(1);
 	}
 	else {
