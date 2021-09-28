@@ -3,61 +3,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include "action.h"
+#include "main.h"
 
 int main(int, char*[]);
 
 /* Set up buffers and flags for file names, editing, and class name */
 char *name, *class, edit = 1;
-int vbose = 0, skip = 0;
+u_int8_t vbose = 0, skip = 0;
 char *timedat, *classdat, *editorpath;
 
 int main(int argc, char *argv[]) {
+	void parse_dat(const char *);
+
 	timedat = classdat = editorpath = NULL;
 	const char *DAT_PATH = "data/data.dat";
 
-	if(access(DAT_PATH, R_OK) == 0) {
-		char *linebuf = (char *)malloc(MAX_LINE);
-		if(linebuf != NULL) {
-			FILE *fp = fopen(DAT_PATH, "r");
-			while((linebuf = fgets(linebuf, MAX_LINE, fp)) != NULL) {
-				int len = strchr(linebuf, ':') - linebuf;
-				if(len < 0 || *linebuf == '#') continue;
-
-				if(!strncmp(linebuf, "time", len) && timedat == NULL) {
-					timedat = (char *)malloc(strlen(linebuf + len));
-
-					if(timedat != NULL) {
-						timedat = strcpy(timedat, linebuf + len + 1);
-						*(timedat + strlen(linebuf + len) - 2) = '\0';
-					}
-				}
-				else if(!strncmp(linebuf, "class", len) && classdat == NULL) {
-					classdat = (char *)malloc(strlen(linebuf + len));
-
-					if(classdat != NULL) {
-						classdat = strcpy(classdat, linebuf + len);
-					}
-				}
-				else if(!strncmp(linebuf, "editor", len) && editorpath == NULL) {
-					editorpath = (char *)malloc(strlen(linebuf + len));
-
-					if(editorpath != NULL) {
-						editorpath = strcpy(editorpath, linebuf + len);
-					}
-				}
-				continue;
-			}
-			
-			fclose(fp);
-			free(linebuf);
-		}
-	}
-	else {
-		FILE *fp = fopen(DAT_PATH, "w");
-		if(fp != NULL) {
-			
-		}
-	}
+	parse_dat(DAT_PATH);
 
 	void (*action)() = &find_name_and_class;
 
@@ -68,21 +29,23 @@ int main(int argc, char *argv[]) {
 		/* Check letter AFTER dash to see the arg */
 		switch(*(argv[i] + 1)) {
 			case 'h': 
-				/* A little sloppy but it works */
-				printf("Note-organizing program that automatically sorts notes.\n");
-				printf("Optional Flags:\n");
-				printf("\t-h: 		 Shows this screen\n");
-				printf("\t-c class:  Override automatic class schedule with a given class\n");
-				printf("\t-n name: 	 Override automatice naming scheme with a custom file name\n");
-				printf("\t-e:		 Only create the note file, do not open to edit\n");
-				printf("\t-v[v]:	 Have the program send more and more updates to stdout\n");
+				fprintf(stdout, "Note-organizing program that automatically sorts notes.\n" 
+				"Optional Flags:\n"
+				"\t-h: 		 Shows this screen\n"
+				"\t-c class:  Override automatic class schedule with a given class\n"
+				"\t-n name: 	 Override automatice naming scheme with a custom file name\n"
+				"\t-e:		 Only create the note file, do not open to edit\n"
+				"\t-v[v]:	 Have the program send more and more updates to stdout\n");
 				return 0;
 			case 'c':
 				/* Skips class name to the next potential arg */
 				i++;
 				
 				/* Save given class name */
-				class = argv[i];
+				char *tmpclass = arg[i];
+				class = (char *)malloc(8 + strlen(tmpclass));
+				if(class != NULL) {
+					class = strcpy(class,
 				
 				/* Correctly sets the action function pointer */
 				action = (action == &find_name_and_class ? &find_name : &open_file);
@@ -103,11 +66,57 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'v': /* Sets verbose flag */
 				for(; *(argv[i] + vbose + 1) == 'v'; vbose++);
-
 				break;
 		}
 	}
 
 	/* Pass execution to proper function */
 	(*action)();
+}
+
+void parse_dat(const char *dat_path) {
+	FILE *dat;
+	char *linebuf;
+	if((dat = fopen(dat_path, "r")) != NULL && (linebuf = (char *)malloc(MAX_LINE)) != NULL) {
+		while((linebuf = fgets(linebuf, MAX_LINE, dat)) != NULL) {
+			int len = strchr(linebuf, ':') - linebuf;
+			if(len < 0 || *linebuf == '#') continue;
+
+			if(timedat == NULL && !strncmp(linebuf, "time", len)) {
+				timedat = (char *)malloc(strlen(linebuf + len));
+
+				if(timedat != NULL) {
+					timedat = strcpy(timedat, linebuf + len + 1);
+					*(timedat + strlen(linebuf + len) - 2) = '\0';
+				}
+			}
+			else if(classdat == NULL && !strncmp(linebuf, "class", len)) {
+				classdat = (char *)malloc(strlen(linebuf + len));
+
+				if(classdat != NULL) {
+					classdat = strcpy(classdat, linebuf + len);
+				}
+			}
+			else if(editorpath == NULL && !strncmp(linebuf, "editor", len)) {
+				editorpath = (char *)malloc(strlen(linebuf + len));
+
+				if(editorpath != NULL) {
+					editorpath = strcpy(editorpath, linebuf + len);
+				}
+			}
+		}
+		
+		fclose(dat);
+		free(linebuf);
+	}
+	/*
+	else {
+		FILE *fp = fopen(DAT_PATH, "w");
+		if(fp != NULL) {
+			fprintf(stderr, MEM_ERR);
+			frpintf(stderr, "ERROR: 0%o\n", (MEM_ERR_CDE - 1));
+			exit(1);
+		}
+	}
+	*/
 }
