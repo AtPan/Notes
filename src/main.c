@@ -31,21 +31,24 @@ int main(int argc, char *argv[]) {
 			case 'h': 
 				fprintf(stdout, "Note-organizing program that automatically sorts notes.\n" 
 				"Optional Flags:\n"
-				"\t-h: 		 Shows this screen\n"
-				"\t-c class:  Override automatic class schedule with a given class\n"
-				"\t-n name: 	 Override automatice naming scheme with a custom file name\n"
-				"\t-e:		 Only create the note file, do not open to edit\n"
-				"\t-v[v]:	 Have the program send more and more updates to stdout\n");
+				"\t-h: 			Shows this message\n"
+				"\t-c class:	Override automatic class schedule with a given class\n"
+				"\t-n name: 	Override automatice naming scheme with a custom file name\n"
+				"\t-e:			Only create the note file, do not open to edit\n"
+				"\t-v(v):		Have the program send more and more updates to stdout\n"
+				"\t-d:			Create and store custom information about your machine\n");
 				return 0;
 			case 'c':
 				/* Skips class name to the next potential arg */
 				i++;
 				
 				/* Save given class name */
-				char *tmpclass = arg[i];
-				class = (char *)malloc(8 + strlen(tmpclass));
+				class = (char *)malloc(8 + strlen(argv[i]));
 				if(class != NULL) {
-					class = strcpy(class,
+					class = strcpy(class, "class/");
+					class = strcat(class, argv[i]);
+					class = strcat(class, "/");
+				}
 				
 				/* Correctly sets the action function pointer */
 				action = (action == &find_name_and_class ? &find_name : &open_file);
@@ -66,6 +69,8 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'v': /* Sets verbose flag */
 				for(; *(argv[i] + vbose + 1) == 'v'; vbose++);
+				break;
+			case 'd': /* Allows for the saving of custom paths around your machine */
 				break;
 		}
 	}
@@ -109,14 +114,4 @@ void parse_dat(const char *dat_path) {
 		fclose(dat);
 		free(linebuf);
 	}
-	/*
-	else {
-		FILE *fp = fopen(DAT_PATH, "w");
-		if(fp != NULL) {
-			fprintf(stderr, MEM_ERR);
-			frpintf(stderr, "ERROR: 0%o\n", (MEM_ERR_CDE - 1));
-			exit(1);
-		}
-	}
-	*/
 }

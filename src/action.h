@@ -12,7 +12,7 @@ char *init_str(char *s, int n);
 #define MAX_LINE 50
 #define VIM_PATH "/usr/bin/vim"
 #define TOUCH_PATH "/usr/bin/touch"
-#define PROGRAM_PATH "/home/floofykn/Programming/Projects/Notes/"
+#define PROGRAM_PATH "~/Programming/Projects/Notes/"
 #define CLASS_DIR "class/"
 #define CLASS_DIR_LEN (strlen(CLASS_DIR))
 #define MAX_NAME_SIZE 4
