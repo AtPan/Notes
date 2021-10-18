@@ -1,0 +1,48 @@
+#! /usr/bin/bash
+
+install=$HOME/.note
+paths=$install/data/path
+
+if [[ -d $install ]]; then
+	input="a"
+	while [[ ! input -eq "y" || ! input -eq "n" ]]
+	do
+		read -p "An installation already exists. Are you sure you want a fresh installation? (y,n) [n] " input
+		if [[ input -eq "y" ]]; then
+			rmdir $install
+		elif [[ input -eq "n" || -z input ]]; then
+			exit 0
+		fi
+	done
+fi
+
+mkdir $install
+mkdir $install/{data,class}
+touch $install/data/{path,time}
+
+if (( $# == 1 )); then
+	EDITOR=$1
+fi
+if [[ -n $EDITOR ]]; then
+	which $EDITOR > /dev/null
+	
+	if (( $? != 0 )); then
+		editors=(emacs vim nano pico)
+		for editor in ${editors[*]}
+		do
+			which $editor > /dev/null
+			if (( $? == 0 )); then
+				EDITOR=$editor
+				break
+			fi
+		done
+
+		if (( $? != 0 )); then
+			echo "No available editors"
+			exit 1
+		fi
+	fi
+fi
+
+echo "touch:$(which touch)" >> $paths
+echo "editor:$(which $EDITOR)" >> $paths

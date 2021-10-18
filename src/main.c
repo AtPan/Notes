@@ -1,24 +1,39 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <string.h>
 #include "action.h"
 #include "main.h"
+#include "startup.h"
 
 int main(int, char*[]);
 
 /* Set up buffers and flags for file names, editing, and class name */
 char *name, *class, edit = 1;
 u_int8_t vbose = 0, skip = 0;
-char *timedat, *classdat, *editorpath;
+extern char *editorpath, *touchpath;
 
 int main(int argc, char *argv[]) {
-	void parse_dat(const char *);
+	/* On startup:
+	   parse $HOME/.note dir
+	   parse $HOME/.note/data/path file
+	*/
 
-	timedat = classdat = editorpath = NULL;
-	const char *DAT_PATH = "data/data.dat";
+	editorpath = touchpath = NULL;
 
-	parse_dat(DAT_PATH);
+	char *path = (char *)malloc(MAX_LINE + 10);
+
+	if(path == NULL) {
+		exit(1);
+	}
+
+	int pathlen = find_path(path, MAX_LINE);
+
+	printf("%s\n", path);
+	return 0;
+
+	free(buf);
+
+
 
 	void (*action)() = &find_name_and_class;
 
@@ -79,7 +94,7 @@ int main(int argc, char *argv[]) {
 	(*action)();
 }
 
-void parse_dat(const char *dat_path) {
+void parse_path(const char *dat_path) {
 	FILE *dat;
 	char *linebuf;
 	if((dat = fopen(dat_path, "r")) != NULL && (linebuf = (char *)malloc(MAX_LINE)) != NULL) {
@@ -87,26 +102,18 @@ void parse_dat(const char *dat_path) {
 			int len = strchr(linebuf, ':') - linebuf;
 			if(len < 0 || *linebuf == '#') continue;
 
-			if(timedat == NULL && !strncmp(linebuf, "time", len)) {
-				timedat = (char *)malloc(strlen(linebuf + len));
-
-				if(timedat != NULL) {
-					timedat = strcpy(timedat, linebuf + len + 1);
-					*(timedat + strlen(linebuf + len) - 2) = '\0';
-				}
-			}
-			else if(classdat == NULL && !strncmp(linebuf, "class", len)) {
-				classdat = (char *)malloc(strlen(linebuf + len));
-
-				if(classdat != NULL) {
-					classdat = strcpy(classdat, linebuf + len);
-				}
-			}
-			else if(editorpath == NULL && !strncmp(linebuf, "editor", len)) {
+			if(editorpath == NULL && !strncmp(linebuf, "editor", len)) {
 				editorpath = (char *)malloc(strlen(linebuf + len));
 
 				if(editorpath != NULL) {
 					editorpath = strcpy(editorpath, linebuf + len);
+				}
+			}
+			else if(touchpath == NULL && !strncmp(linebuf, "touch", len)) {
+				touchpath = (char *)malloc(strlen(linebuf + len));
+
+				if(touchpath != NULL) {
+					touchpath = strcpy(touchpath, linebuf + len);
 				}
 			}
 		}

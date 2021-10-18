@@ -7,14 +7,8 @@ void find_name();
 void find_class();
 char *init_str(char *s, int n);
 
-#define TIME_LOC "data/time.dat"
-#define CLASS_LOC "data/class.dat"
 #define MAX_LINE 50
 #define VIM_PATH "/usr/bin/vim"
-#define TOUCH_PATH "/usr/bin/touch"
-#define PROGRAM_PATH "~/Programming/Projects/Notes/"
-#define CLASS_DIR "class/"
-#define CLASS_DIR_LEN (strlen(CLASS_DIR))
 #define MAX_NAME_SIZE 4
 
 #ifdef DEBUG

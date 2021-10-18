@@ -1,5 +1,0 @@
-DSA_DSA
-CRG_Computer Organization
-CLC_Calculus III
-CLT_Computer Lab Technologies
-MSA_Music Appreciation

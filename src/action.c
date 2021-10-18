@@ -108,7 +108,7 @@ void find_class() {
 		exit(1);
 	}
 
-	int cname_len = CLASS_DIR_LEN + MAX_NAME_SIZE;
+	int cname_len = 6 + MAX_NAME_SIZE;
 	if((cname = (char *)malloc(cname_len)) == NULL) {
 		fprintf(stderr, MEM_ERR);
 		fprintf(stderr, "ERROR: 0%o\n", (MEM_ERR_CDE + 3));
@@ -142,7 +142,7 @@ void find_class() {
 					i++; //Increment past the leftover _
 					int clen = strchr(linebuf + i, '\0') - (linebuf + i);
 
-					cname = strcpy(cname, CLASS_DIR);
+					cname = strcpy(cname, "");
 					cname = strncpy(cname + CLASS_DIR_LEN, linebuf + i, clen) - CLASS_DIR_LEN;
 					cname = strcat(cname, "/\0");
 

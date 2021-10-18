@@ -1,24 +1,41 @@
-CC = gcc
-CFLAGS = -Wall -g3 
-SRC = ./src
-BIN = ./bin
-TARGET = note
-
+# Global declerations ----------------
+CC := gcc
+SRC := ./src
+BIN := ./bin
 CSRC := $(wildcard $(SRC)/*.c)
-HSRC := $(wildcard $(SRC)/*.h)
 OBJS := ${CSRC:c=o}
+FLAGS = -Wall
 
-all: $(TARGET)
-	mv $(SRC)/*.o $(TARGET) $(BIN)
+# For debug builds -------------------
+DEBUGTARGET = dnote
 
-$(TARGET): $(OBJS)
+# For release builds -----------------
+BUILD = note
+
+# Make rules -------------------------
+	# Release Build ------------------
+all: $(BUILD)
+
+$(BUILD): $(OBJS)
+	mv $(SRC)/*.o $(BIN)
+	mv $(BUILD) /usr/bin/
+	./install
+
+
+	# Debug Build --------------------
+Test: Flags += -g3
+Test: $(DEBUGTARGET)
+	mv $(SRC)/*.o $(DEBUGTARGET) $(BIN)
+
+$(DEBUGTARGET): $(OBJS)
 	$(CC) -o $@ $^
 
-%.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $<
 
+	# Global rules -------------------
+%.o: %.c
+	$(CC) $(FLAGS) -o $@ -c $<
+
+# Clean
 clean:
 	rm $(BIN)/*
 
-debug: CFLAGS += -DDEBUG
-debug: all
