@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 #include "action.h"
 #include "main.h"
 #include "startup.h"
@@ -18,27 +19,21 @@ int main(int argc, char *argv[]) {
 	   parse $HOME/.note/data/path file
 	*/
 
-	editorpath = touchpath = NULL;
+	/* Parses $HOME/.note */
+	char *dirpath = argv[1];
+	int dirlen = strlen(dirpath);
+	char *datpath = (char *)malloc(dirlen + 10);
 
-	char *path = (char *)malloc(MAX_LINE + 10);
+	datpath = strcpy(datpath, dirpath);
+	datpath = strcat(datpath, "/data/path");
 
-	if(path == NULL) {
-		exit(1);
-	}
-
-	int pathlen = find_path(path, MAX_LINE);
-
-	printf("%s\n", path);
-	return 0;
-
-	free(buf);
-
-
+	/* Grabs path of editor and touch commands */
+	parse_path(datpath);
 
 	void (*action)() = &find_name_and_class;
 
 	/* Loop through all arguments  */
-	for(int i = 1; i < argc; i++) {
+	for(int i = 2; i < argc; i++) {
 
 		/* All args are 1 char (i.e. -h, -c, -e, etc.) */
 		/* Check letter AFTER dash to see the arg */
@@ -85,8 +80,6 @@ int main(int argc, char *argv[]) {
 			case 'v': /* Sets verbose flag */
 				for(; *(argv[i] + vbose + 1) == 'v'; vbose++);
 				break;
-			case 'd': /* Allows for the saving of custom paths around your machine */
-				break;
 		}
 	}
 
@@ -106,15 +99,18 @@ void parse_path(const char *dat_path) {
 				editorpath = (char *)malloc(strlen(linebuf + len));
 
 				if(editorpath != NULL) {
-					editorpath = strcpy(editorpath, linebuf + len);
+					editorpath = strcpy(editorpath, (linebuf + len + 1));
 				}
 			}
 			else if(touchpath == NULL && !strncmp(linebuf, "touch", len)) {
 				touchpath = (char *)malloc(strlen(linebuf + len));
 
-				if(touchpath != NULL) {
-					touchpath = strcpy(touchpath, linebuf + len);
+				if(touchpath == NULL) {
+					fprintf(stderr, "touchpath cannot allocate memory\n");
+					exit(1);
 				}
+
+				touchpath = strcpy(touchpath, (linebuf + len + 1));
 			}
 		}
 		

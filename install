@@ -5,10 +5,19 @@ paths=$install/data/path
 
 if [[ -d $install ]]; then
 	input="a"
-	while [[ ! input -eq "y" || ! input -eq "n" ]]
+	while [[ $input != "y" && $input != "n" ]]
 	do
 		read -p "An installation already exists. Are you sure you want a fresh installation? (y,n) [n] " input
 		if [[ input -eq "y" ]]; then
+			for file in $install/*
+			do
+				if [[ -d $file ]]; then
+					rm -r $file
+				else
+					rm $file
+				fi
+			done
+
 			rmdir $install
 		elif [[ input -eq "n" || -z input ]]; then
 			exit 0
@@ -23,7 +32,7 @@ touch $install/data/{path,time}
 if (( $# == 1 )); then
 	EDITOR=$1
 fi
-if [[ -n $EDITOR ]]; then
+if [[ -z $EDITOR ]]; then
 	which $EDITOR > /dev/null
 	
 	if (( $? != 0 )); then
