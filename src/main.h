@@ -4,7 +4,4 @@
 #define MEM_ERR "Cannot secure memory for buffer\n"
 #define MEM_ERR_CDE 0200
 
-#define EXE_PATH "/usr/bin/notes"
-#define NOTE_DIR "$HOME/.note"
-
 #endif

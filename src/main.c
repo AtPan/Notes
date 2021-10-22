@@ -4,31 +4,44 @@
 #include <string.h>
 #include "action.h"
 #include "main.h"
-#include "startup.h"
+#include "misc.h"
 
 int main(int, char*[]);
 
 /* Set up buffers and flags for file names, editing, and class name */
 char *name, *class, edit = 1;
 u_int8_t vbose = 0, skip = 0;
-extern char *editorpath, *touchpath;
+extern char *editorpath, *touchpath, *classdir, *timefile;
 
 int main(int argc, char *argv[]) {
 	/* On startup:
-	   parse $HOME/.note dir
-	   parse $HOME/.note/data/path file
+	   save $HOME/.note dir to installdir (1)
+	   parse $HOME/.note/data/path file (2)
+	   save $HOME/.note/class dir to classdir (3)
+	   save $HOME/.note/data/time file to timefile (4)
 	*/
 
-	/* Parses $HOME/.note */
-	char *dirpath = argv[1];
-	int dirlen = strlen(dirpath);
-	char *datpath = (char *)malloc(dirlen + 10);
+	/* (1) */
+	char *installdir = argv[1];
+	int dirlen = strlen(installdir);
 
-	datpath = strcpy(datpath, dirpath);
-	datpath = strcat(datpath, "/data/path");
+	/* (2) */
+	char *pathfile;
+	pathfile = securebuf(pathfile, dirlen + 11);
+	pathfile = strcpy(pathfile, installdir);
+	pathfile = strcat(pathfile, "/data/path\0");
+	parse_path(pathfile);
+	free(pathfile);
 
-	/* Grabs path of editor and touch commands */
-	parse_path(datpath);
+	/* (3) */
+	classdir = securebuf(classdir, dirlen + 7);
+	classdir = strcpy(classdir, installdir);
+	classdir = strcat(classdir, "/class\0");
+
+	/* (4) */
+	timefile = securebuf(timefile, dirlen + 11);
+	timefile = strcpy(timefile, installdir);
+	timefile = strcat(timefile, "/data/time\0");
 
 	void (*action)() = &find_name_and_class;
 

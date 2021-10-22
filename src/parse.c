@@ -3,8 +3,11 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "parse.h"
+#include "action.h"
+#include "misc.h"
 
 extern int vbose;
+extern char *editorpath, *touchpath;
 
 /* 
 Parses a line from our class schedule document and returns the time caught between n and m.
@@ -86,4 +89,38 @@ int parse_class_dir(char *cdir) {
 
 	free(sp);
 	return status;
+}
+
+void parse_path(const char *dat_path) {
+    FILE *dat;
+    char *linebuf;
+	linebuf = securebuf(linebuf, MAX_LINE);
+
+    if((dat = fopen(dat_path, "r")) != NULL) {
+        while((linebuf = fgets(linebuf, MAX_LINE, dat)) != NULL) {
+            int len = strchr(linebuf, ':') - linebuf;
+            if(len < 0 || *linebuf == '#') continue;
+
+            if(editorpath == NULL && !strncmp(linebuf, "editor", len)) {
+                editorpath = (char *)malloc(strlen(linebuf + len));
+
+                if(editorpath != NULL) {
+                    editorpath = strcpy(editorpath, (linebuf + len + 1));
+                }
+            }
+            else if(touchpath == NULL && !strncmp(linebuf, "touch", len)) {
+                touchpath = (char *)malloc(strlen(linebuf + len));
+
+                if(touchpath == NULL) {
+                    fprintf(stderr, "touchpath cannot allocate memory\n");
+                    exit(1);
+                }
+
+                touchpath = strcpy(touchpath, (linebuf + len + 1));
+            }
+        }
+
+        fclose(dat);
+        free(linebuf);
+    }
 }

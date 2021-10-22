@@ -14,8 +14,6 @@ BUILD = note
 
 # Make rules -------------------------
 	# Release Build ------------------
-all: $(BUILD)
-
 $(BUILD): $(OBJS)
 	mv $(SRC)/*.o $(BIN)
 	mv $(BUILD) /usr/bin/

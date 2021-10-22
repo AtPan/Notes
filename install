@@ -55,3 +55,4 @@ fi
 
 echo "touch:$(which touch)" >> $paths
 echo "editor:$(which $EDITOR)" >> $paths
+make note
