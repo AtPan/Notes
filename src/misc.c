@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "main.h"
 #include "action.h"
 #include "misc.h"
 
-char *securebuf(char *buf, int n) {
+char *securebuf(int n) {
 	char *initbuf(char *, int);
 	static int bufc;
 
@@ -12,7 +13,7 @@ char *securebuf(char *buf, int n) {
 		n = MAX_LINE;
 	}
 
-	buf = malloc(n);
+	char *buf = malloc(n);
 	if(buf == NULL) {
 		fprintf(stderr, "Could not secure buffer\n");
 		fprintf(stderr, "ERROR: 0%o\n", (MEM_ERR_CDE + bufc));
@@ -41,7 +42,7 @@ Assumptions:
 char *initbuf(char *s, int n) {
 	if(s == NULL || n <= 0) return NULL;
 
-	return memsetset(s, 0, n);
+	return memset(s, 0, n);
 }
 
 /*
@@ -62,11 +63,13 @@ Assumptions:
 */
 char *concat_int(char *s, int n) {
 	char *str = s;
-	int len = 0;
-	for(int i = n; i > 0; i /= 10) len++;
+	int nlen = 0;
+	int i;
+	while(*str != '\0') str++;
+	for(i = n; i > 0; i /= 10) nlen++;
 
-	for(int i = 0; i < len; i++) {
-		*(str + (len - i - 1)) = (n % 10) + '0';
+	for(i = 0; i < nlen; i++) {
+		*(str + (nlen - i - 1)) = (n % 10) + '0';
 		n /= 10;
 	}
 

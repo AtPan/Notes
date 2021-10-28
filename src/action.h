@@ -5,8 +5,9 @@ void open_file();
 void find_name_and_class();
 void find_name();
 void find_class();
+void add_class();
 
-#define MAX_LINE 50
+#define MAX_LINE 75
 
 #ifdef DEBUG
 #define DEBUG_SKIP 1

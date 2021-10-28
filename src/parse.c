@@ -7,7 +7,7 @@
 #include "misc.h"
 
 extern int vbose;
-extern char *editorpath, *touchpath;
+extern char *editorpath, *touchpath, *classdir;
 
 /* 
 Parses a line from our class schedule document and returns the time caught between n and m.
@@ -68,10 +68,14 @@ int parse_class_dir(char *cdir) {
 		exit(1);
 	}
 
+	char *classdirpath = securebuf(strlen(cdir) + strlen(classdir) + 1);
+	classdirpath = strcpy(classdirpath, classdir);
+	classdirpath = strcat(classdirpath, cdir);
+
 	if(vbose > 1) { fprintf(stdout, "Parsing subdir '%s' for class name\n", cdir); }
 	
-	if(stat(cdir, sp) < 0) { /* If subdir does not exist */
-		if(!mkdir(cdir, S_IRWXU)) { /* If subdir has been created */
+	if(stat(classdirpath, sp) < 0) { /* If subdir does not exist */
+		if(!mkdir(classdirpath, S_IRWXU)) { /* If subdir has been created */
 			if(vbose > 1) { fprintf(stdout, "Subdir '%s' has been created\n", cdir); }
 
 			status = 1;
@@ -88,13 +92,13 @@ int parse_class_dir(char *cdir) {
 	}
 
 	free(sp);
+	free(classdirpath);
 	return status;
 }
 
 void parse_path(const char *dat_path) {
     FILE *dat;
-    char *linebuf;
-	linebuf = securebuf(linebuf, MAX_LINE);
+    char *linebuf = securebuf(MAX_LINE);
 
     if((dat = fopen(dat_path, "r")) != NULL) {
         while((linebuf = fgets(linebuf, MAX_LINE, dat)) != NULL) {
@@ -102,21 +106,14 @@ void parse_path(const char *dat_path) {
             if(len < 0 || *linebuf == '#') continue;
 
             if(editorpath == NULL && !strncmp(linebuf, "editor", len)) {
-                editorpath = (char *)malloc(strlen(linebuf + len));
-
-                if(editorpath != NULL) {
-                    editorpath = strcpy(editorpath, (linebuf + len + 1));
-                }
+				editorpath = securebuf(strlen(linebuf + len - 1));
+                editorpath = strcpy(editorpath, (linebuf + len + 1));
+				*(editorpath + strlen(editorpath) - 1) = '\0';
             }
             else if(touchpath == NULL && !strncmp(linebuf, "touch", len)) {
-                touchpath = (char *)malloc(strlen(linebuf + len));
-
-                if(touchpath == NULL) {
-                    fprintf(stderr, "touchpath cannot allocate memory\n");
-                    exit(1);
-                }
-
+				touchpath = securebuf(strlen(linebuf + len - 1));
                 touchpath = strcpy(touchpath, (linebuf + len + 1));
+				*(touchpath + strlen(touchpath) - 1) = '\0';
             }
         }
 

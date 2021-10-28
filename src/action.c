@@ -38,27 +38,23 @@ void find_name() {
 	int date = local->tm_mday; /* Date of the month */
 	int month = local->tm_mon + 1; /* Month of the year */
 
-	char *filename; /* dd-mm.txt = 9 chars + ending 0 */
-	filename = securebuf(filename, 10);
-	filename = init_str(filename, 10);
-	
+	char *filename = securebuf(10); /* dd-mm.txt = 9 chars + ending 0 */
 	char *fn = filename;
 
 	if(date < 10) {
-		*fn++ = '0';
+		*fn = '0';
 	}
-	fn = concat_int(fn, date);
+	fn = concat_int(fn, date) + 2;
 	
 	*fn++ = '-';
 	
 	if(month < 10) {
-		*fn++ = '0';
+		*fn = '0';
 	}
-	fn = concat_int(fn, month);
+	fn = concat_int(fn, month) + 2;
 	fn = strcat(fn, ".txt\0");
 
 	name = filename; /* Save the file name */
-	free(filename);
 
 	if(vbose) { fprintf(stdout, "Filename '%s'\n", filename); }
 	if(skip) { open_file(); }
@@ -84,13 +80,13 @@ void find_class() {
 	char found = 0;
 
 	if((ctime = fopen(timefile, "r")) == NULL) {
-		fprintf(stderr, "Error opening time-schedule file '%s'\n", TIME_LOC);
+		fprintf(stderr, "Error opening time-schedule file '%s'\n", timefile);
 		fprintf(stderr, "ERROR: 0%o\n", 0301);
 		exit(1);
 	}
 
-	linebuf = securebuf(linebuf, MAX_LINE);
-	cname = securebuf(cname, MAX_LINE);
+	linebuf = securebuf(MAX_LINE);
+	cname = securebuf(MAX_LINE);
 
 	/* Find out what times the classes are and figure out if we fall in any of said time intervals */
 	while((linebuf = fgets(linebuf, MAX_LINE - 1, ctime)) != 0 && (long)linebuf != EOF && !found) {
@@ -114,17 +110,19 @@ void find_class() {
 					
 					/* linebuf + i = "_CLASS" */
 					i++; //Increment past the leftover _
-					int clen = strchr(linebuf + i, '\0') - (linebuf + i);
 
-					cname = strcpy(cname, "");
-					cname = strncpy(cname + CLASS_DIR_LEN, linebuf + i, clen) - CLASS_DIR_LEN;
-					cname = strcat(cname, "/\0");
+					cname = strcpy(cname, linebuf + i);
 
 					if(parse_class_dir(cname) != EOF) {
 						class = cname;
+						class = strcat(class, "/");
+					}
+					else {
+						class = NULL;
 					}
 					
 					found = 1;
+					break;
 				}
 			}
 		}
@@ -136,8 +134,12 @@ void find_class() {
 	if(vbose) { fprintf(stdout, "Class name found: '%s'\n", class); }
 
 	if(!found) {
-		class = NULL;
-		free(cname);
+		fprintf(stderr, "No class at this time and day\n");
+		exit(3);
+	}
+	if(class == NULL) {
+		fprintf(stderr, "Could not parse class name\n");
+		exit(2);
 	}
 
 	if(skip) { open_file(); }
@@ -145,22 +147,57 @@ void find_class() {
 
 void open_file() {
 	if(class != NULL && name != NULL) {
-		char *cmd = (char *)malloc(strlen(PROGRAM_PATH) + strlen(class) + strlen(name) + 1);
-		sprintf(cmd, "%s%s%s", PROGRAM_PATH, class, name);
-
-		if(cmd == NULL) {
-			fprintf(stderr, "Error allocating memory for full file path '%s%s%s'\n", PROGRAM_PATH, class, name);
-			exit(1);
-		}
+		char *cmd = securebuf(strlen(classdir) + strlen(class) + strlen(name) + 1);
+		sprintf(cmd, "%s%s%s", classdir, class, name);
 
 		if(edit == 1) {
-			char *args[] = {VIM_PATH, cmd, NULL};
+			char *args[] = {editorpath, cmd, NULL};
 			execvp("vim", args);
 		}
 		else {
-			char *args[] = {TOUCH_PATH, cmd, NULL};
+			char *args[] = {touchpath, cmd, NULL};
 			execvp("touch", args);
 		}
 	}
 }
 
+void add_class() {
+	char *read_in(char *, int, const char *);
+
+	FILE *timefilestream = fopen(timefile, "a");
+	char *buffer = securebuf(MAX_LINE);
+
+	/* Name of Class */
+	char *classname = read_in(buffer, MAX_LINE, "Enter Name of Class: ");
+
+	/* Start Time */
+	buffer = securebuf(MAX_LINE);
+	buffer = read_in(buffer, MAX_LINE, "Enter Class Start Time (in 24-hour notation, no colon): ");
+	int starttime = atoi(buffer);
+
+	/* End Time */
+	buffer = read_in(buffer, MAX_LINE, "Enter Class End Time (in 24-hour notation, no colon): ");
+	int endtime = atoi(buffer);
+
+	/* Days */
+	char *days = read_in(buffer, MAX_LINE, "Enter Class Days (no spaces, one letter): ");
+
+	buffer = securebuf(MAX_LINE);
+	sprintf(buffer, "%d_%d_%s_%s\n", starttime, endtime, days, classname);
+
+	fputs(buffer, timefilestream);
+	fflush(timefilestream);
+
+	fclose(timefilestream);
+	free(buffer);
+	free(classname);
+	free(days);
+}
+
+char *read_in(char *buf, int n, const char *msg) {
+	fprintf(stdout, msg);
+	fflush(stdout);
+	buf = fgets(buf, n, stdin);
+	*(buf + strlen(buf) - 1) = '\0';
+	return buf;
+}
