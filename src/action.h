@@ -5,17 +5,9 @@ void open_file();
 void find_name_and_class();
 void find_name();
 void find_class();
-char *init_str(char *s, int n);
+void add_class();
 
-#define TIME_LOC "data/time.txt"
-#define CLASS_LOC "data/class.txt"
-#define MAX_LINE 50
-#define VIM_PATH "/usr/bin/vim"
-#define TOUCH_PATH "/usr/bin/touch"
-#define PROGRAM_PATH "/home/floofykn/Programming/Projects/Notes/"
-#define CLASS_DIR "class/"
-#define CLASS_DIR_LEN (strlen(CLASS_DIR))
-#define MAX_NAME_SIZE 4
+#define MAX_LINE 75
 
 #ifdef DEBUG
 #define DEBUG_SKIP 1

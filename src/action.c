@@ -3,14 +3,15 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include "main.h"
 #include "action.h"
 #include "parse.h"
-
-char *concat_int(char *, int);
+#include "misc.h"
 
 /* Connect to the name, class, and edit flags setup in main.c */
 extern char *name, *class, edit;
 extern int vbose, skip;
+extern char *timefile, *classdir, *editorpath, *touchpath;
 
 /*
 Finds the name and class subdir for the note file.
@@ -37,35 +38,25 @@ void find_name() {
 	int date = local->tm_mday; /* Date of the month */
 	int month = local->tm_mon + 1; /* Month of the year */
 
-	char *filename = (char *)malloc(10); /* dd-mm.txt = 9 chars + ending 0 */
-	filename = init_str(filename, 10);
+	char *filename = securebuf(10); /* dd-mm.txt = 9 chars + ending 0 */
+	char *fn = filename;
+
+	if(date < 10) {
+		*fn = '0';
+	}
+	fn = concat_int(fn, date) + 2;
 	
-	if(filename >= 0) { /* If pointer exists, fill it with the naming convention */
-		char *fn = filename;
-
-		if(date < 10) {
-			*fn++ = '0';
-		}
-		fn = concat_int(fn, date);
-		
-		*fn++ = '-';
-		
-		if(month < 10) {
-			*fn++ = '0';
-		}
-		fn = concat_int(fn, month);
-
-		fn = strcat(fn, ".txt\0");
-
-		name = filename; /* Save the file name */
-
-		if(vbose) { fprintf(stdout, "Filename '%s'\n", filename); }
+	*fn++ = '-';
+	
+	if(month < 10) {
+		*fn = '0';
 	}
-	else {
-		fprintf(stderr, "ERROR: Cannot create name for file\n");
-		name = NULL;
-	}
+	fn = concat_int(fn, month) + 2;
+	fn = strcat(fn, ".txt\0");
 
+	name = filename; /* Save the file name */
+
+	if(vbose) { fprintf(stdout, "Filename '%s'\n", filename); }
 	if(skip) { open_file(); }
 }
 
@@ -86,29 +77,19 @@ void find_class() {
 	struct tm *local = localtime(&td);
 	int time = (local->tm_hour * 100) + local->tm_min;
 	int day = local->tm_wday;
+	char found = 0;
 
-	/* Error handle for our buffers */
-	if((ctime = fopen(TIME_LOC, "r")) == NULL) {
-		fprintf(stderr, "Error opening time-schedule file '%s'\n", TIME_LOC);
+	if((ctime = fopen(timefile, "r")) == NULL) {
+		fprintf(stderr, "Error opening time-schedule file '%s'\n", timefile);
+		fprintf(stderr, "ERROR: 0%o\n", 0301);
 		exit(1);
 	}
 
-	if((linebuf = (char *)malloc(MAX_LINE)) == NULL) {
-		fprintf(stderr, "Error allocating '%d' bytes for line buffer\n", MAX_LINE);
-		exit(1);
-	}
+	linebuf = securebuf(MAX_LINE);
+	cname = securebuf(MAX_LINE);
 
-	int cname_len = CLASS_DIR_LEN + MAX_NAME_SIZE;
-	if((cname = (char *)malloc(cname_len)) == NULL) {
-		fprintf(stderr, "Error allocating '%d' bytes for class name buffer\n", cname_len);
-		exit(1);
-	}
-	else {
-		cname = init_str(cname, cname_len);
-	}
-	
 	/* Find out what times the classes are and figure out if we fall in any of said time intervals */
-	while((linebuf = fgets(linebuf, MAX_LINE - 1, ctime)) != 0 && (long)linebuf != EOF) {
+	while((linebuf = fgets(linebuf, MAX_LINE - 1, ctime)) != 0 && (long)linebuf != EOF && !found) {
 		if(*linebuf == '#') continue; //Allow for in-line comments
 		
 		int start_time = parse_class_time(linebuf, 0, 4), end_time = parse_class_time(linebuf, 5, 9);
@@ -129,17 +110,19 @@ void find_class() {
 					
 					/* linebuf + i = "_CLASS" */
 					i++; //Increment past the leftover _
-					int clen = strchr(linebuf + i, '\0') - (linebuf + i);
 
-					cname = strcpy(cname, CLASS_DIR);
-					cname = strncpy(cname + CLASS_DIR_LEN, linebuf + i, clen) - CLASS_DIR_LEN;
-					cname = strcat(cname, "/\0");
+					cname = strcpy(cname, linebuf + i);
 
 					if(parse_class_dir(cname) != EOF) {
 						class = cname;
+						class = strcat(class, "/");
+					}
+					else {
+						class = NULL;
 					}
 					
-					goto cfound;
+					found = 1;
+					break;
 				}
 			}
 		}
@@ -147,86 +130,74 @@ void find_class() {
 
 	fclose(ctime);
 	free(linebuf);
-	free(cname);
 
-	class = NULL;
-	return;
-
-cfound:
 	if(vbose) { fprintf(stdout, "Class name found: '%s'\n", class); }
+
+	if(!found) {
+		fprintf(stderr, "No class at this time and day\n");
+		exit(3);
+	}
+	if(class == NULL) {
+		fprintf(stderr, "Could not parse class name\n");
+		exit(2);
+	}
 
 	if(skip) { open_file(); }
 }
 
 void open_file() {
 	if(class != NULL && name != NULL) {
-		char *cmd = (char *)malloc(strlen(PROGRAM_PATH) + strlen(class) + strlen(name) + 1);
-		sprintf(cmd, "%s%s%s", PROGRAM_PATH, class, name);
-
-		if(cmd == NULL) {
-			fprintf(stderr, "Error allocating memory for full file path '%s%s%s'\n", PROGRAM_PATH, class, name);
-			exit(1);
-		}
+		char *cmd = securebuf(strlen(classdir) + strlen(class) + strlen(name) + 1);
+		sprintf(cmd, "%s%s%s", classdir, class, name);
 
 		if(edit == 1) {
-			char *args[] = {VIM_PATH, cmd, NULL};
+			char *args[] = {editorpath, cmd, NULL};
 			execvp("vim", args);
 		}
 		else {
-			char *args[] = {TOUCH_PATH, cmd, NULL};
+			char *args[] = {touchpath, cmd, NULL};
 			execvp("touch", args);
 		}
 	}
 }
 
-/*
-Concats the printable characters of n onto string s
+void add_class() {
+	char *read_in(char *, int, const char *);
 
-Example:
-	concat_int("Hello", 20) -> "Hello20"
+	FILE *timefilestream = fopen(timefile, "a");
+	char *buffer = securebuf(MAX_LINE);
 
-Arguments:
-	char *s = String to concat to
-	int n = Printable digits to concat onto s
+	/* Name of Class */
+	char *classname = read_in(buffer, MAX_LINE, "Enter Name of Class: ");
 
-Returns:
-	A string concatenated with the digits from n
+	/* Start Time */
+	buffer = securebuf(MAX_LINE);
+	buffer = read_in(buffer, MAX_LINE, "Enter Class Start Time (in 24-hour notation, no colon): ");
+	int starttime = atoi(buffer);
 
-Assumptions:
-	String s is a valid pointer and is large enough to hold the digits of n
-*/
-char *concat_int(char *s, int n) {
-	char *str = s;
-	int len = 0;
-	for(int i = n; i > 0; i /= 10) len++;
+	/* End Time */
+	buffer = read_in(buffer, MAX_LINE, "Enter Class End Time (in 24-hour notation, no colon): ");
+	int endtime = atoi(buffer);
 
-	for(int i = 0; i < len; i++) {
-		*(str+(len - i - 1)) = (n % 10) + '0';
-		n /= 10;
-	}
+	/* Days */
+	char *days = read_in(buffer, MAX_LINE, "Enter Class Days (no spaces, one letter): ");
 
-	return s + len;
+	buffer = securebuf(MAX_LINE);
+	sprintf(buffer, "%d_%d_%s_%s\n", starttime, endtime, days, classname);
+
+	fputs(buffer, timefilestream);
+	fflush(timefilestream);
+
+	fclose(timefilestream);
+	free(buffer);
+	free(classname);
+	free(days);
 }
 
-/*
-A function that initiates a string to all 0's to avoid potential errors.
-
-Example:
-	init_str(&str, 10) -> First 10 chars of str initialized to 0
-
-Arguments:
-	char *s = String pointer
-	int n = Length of char *s
-
-Returns:
-	String s or NULL on error
-
-Assumptions:
-	char *s is a valid pointer and n is a correct length of s
-*/
-char *init_str(char *s, int n) {
-	if(s == NULL || n <= 0) return NULL;
-	
-	for(int i = 0; i < n; i++) *(s + i) = 0;
-	return s;
+char *read_in(char *buf, int n, const char *msg) {
+	fprintf(stdout, msg);
+	fflush(stdout);
+	buf = fgets(buf, n, stdin);
+	*(buf + strlen(buf) - 1) = '\0';
+	return buf;
 }
