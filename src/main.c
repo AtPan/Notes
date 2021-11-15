@@ -72,10 +72,9 @@ int main(int argc, char *argv[]) {
 				i++;
 				
 				/* Save given class name */
-				class = (char *)malloc(8 + strlen(argv[i]));
-				if(class != NULL) {
-					class = strcpy(class, "class/");
-					class = strcat(class, argv[i]);
+				class = securebuf(strlen(argv[i]));
+				if(parse_class_dir(argv[i]) != EOF) {
+					class = strcpy(class, argv[i]);
 					class = strcat(class, "/");
 				}
 				

@@ -41,17 +41,18 @@ void find_name() {
 	char *filename = securebuf(10); /* dd-mm.txt = 9 chars + ending 0 */
 	char *fn = filename;
 
+	if(month < 10) {
+		*fn = '0';
+	}
+	fn = concat_int(fn, month) + 2;
+
+	*fn++ = '-';
+
 	if(date < 10) {
 		*fn = '0';
 	}
 	fn = concat_int(fn, date) + 2;
 	
-	*fn++ = '-';
-	
-	if(month < 10) {
-		*fn = '0';
-	}
-	fn = concat_int(fn, month) + 2;
 	fn = strcat(fn, ".txt\0");
 
 	name = filename; /* Save the file name */
