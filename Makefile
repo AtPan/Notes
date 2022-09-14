@@ -2,9 +2,9 @@
 CC := gcc
 SRC := ./src
 BIN := ./bin
-CSRC := $(wildcard $(SRC)/*.c)
+CSRC := $(wildcard $(SRC)/*.c $(SRC)/*/*.c)
 OBJS := ${CSRC:%.c=%.o}
-FLAGS = -Wall
+FLAGS = -Wall -Wextra -Werror -g2 -fsanitize=leak -iquote$(SRC)/include
 
 # For debug builds -------------------
 DEBUGTARGET = dnote
@@ -16,13 +16,13 @@ BUILD = note
 # --- Release Build ------------------
 $(BUILD): $(OBJS)
 	$(CC) $^ -o $@
-	mv $(SRC)/*.o $(BIN)
-	sudo mv ./$(BUILD) /usr/local/bin/
+	@mv $(OBJS) $(BIN)
+	@mv ./$(BUILD) $(BIN) 
 
 # --- Debug Build --------------------
 Test: FLAGS := $(FLAGS) -g3 -DDEBUG
 Test: $(DEBUGTARGET)
-	mv $(SRC)/*.o $(DEBUGTARGET) $(BIN)
+	@mv $(SRC)/*.o $(DEBUGTARGET) $(BIN)
 
 $(DEBUGTARGET): $(OBJS)
 	$(CC) -o $@ $^
@@ -34,4 +34,4 @@ $(DEBUGTARGET): $(OBJS)
 
 # Clean
 clean:
-	rm $(BIN)/*
+	@rm $(BIN)/*
