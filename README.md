@@ -1,4 +1,4 @@
------------------------------- General Information -------------------------------------
+#General Information
 This is a cute little note-organizer that I wrote last semester!
 The purpose of this program is to organize my notes for me, create notes for me, and allow easy editing/viewing of past notes.
 
@@ -6,7 +6,7 @@ It check the time of the day and day of the week against every entry in the time
 If there is a hit, the program tries to create a directory for the class (if one does not already exist) and then opens a file for editing.
 
 
------------------------------ Program Specifics ----------------------------------------
+#Program Specifics
 This project was built on a Linux system (specifically Ubuntu 18)
 I have not tested it on Mac or Windows systems, I doubt it works on those platforms (definitely not the install script) but you never know.
 
