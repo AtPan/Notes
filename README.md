@@ -14,7 +14,7 @@ All of the code is contained in the src/ folder.
 All header files are in src/include/.
 To install, simply run the install script.
 
-The install script will:
+The install script will:  
 	- Set up the directory used to house data for this program (\~/.note)
 	- Create needed files for this program to use (\~/.note/data/time and \~/.note/data/path)
 	- Compile the source code
