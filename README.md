@@ -15,10 +15,10 @@ All header files are in src/include/.
 To install, simply run the install script.
 
 The install script will:  
-	- Set up the directory used to house data for this program (\~/.note)
-	- Create needed files for this program to use (\~/.note/data/time and \~/.note/data/path)
-	- Compile the source code
-	- Create a symbolic link to the executable (bin/note) in /usr/local/bin/
+- Set up the directory used to house data for this program (\~/.note)
+- Create needed files for this program to use (\~/.note/data/time and \~/.note/data/path)
+- Compile the source code
+- Create a symbolic link to the executable (bin/note) in /usr/local/bin/
 
 If you just want to compile, you can run 'make'
 If you want to create a debug build, you can run 'make Test', but I haven't tested that in a while so no promises it works.
