@@ -1,13 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "notes.h"
 #include <sys/stat.h>
-#include "parse.h"
-#include "action.h"
-#include "misc.h"
-
-extern int vbose;
-extern char *editorpath, *touchpath, *classdir;
 
 /* 
 Parses a line from our class schedule document and returns the time caught between n and m.

@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "main.h"
-#include "action.h"
-#include "misc.h"
+#include "notes.h"
 
 char *securebuf(int n) {
 	char *initbuf(char *, int);
