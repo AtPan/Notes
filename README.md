@@ -1,6 +1,6 @@
 # General Information
-This is a cute little note-organizer that I wrote last semester!
-The purpose of this program is to organize my notes for me, create notes for me, and allow easy editing/viewing of past notes.
+This is a little note organizing program.
+The purpose of this program is to organize notes, create notes, and allow easy editing/viewing of past notes.
 
 It check the time of the day and day of the week against every entry in the time file.
 If there is a hit, the program tries to create a directory for the class (if one does not already exist) and then opens a file for editing.
