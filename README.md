@@ -21,6 +21,4 @@ The install script will:
 - Create a symbolic link to the executable (bin/note) in /usr/local/bin/
 
 If you just want to compile, you can run 'make'
-If you want to create a debug build, you can run 'make Test', but I haven't tested that in a while so no promises it works.
-
-There are some bugs I have seen floating around, minor things like verbose data being printed without the -v switch.
+If you want to create a debug build, you can run 'make Test'
